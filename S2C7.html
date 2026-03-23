@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>💡 互動溫習與手寫默書 (友善版)</title>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --secondary: #f39c12;
+            --bg: #f8f9fa;
+            --text: #333;
+            --card-bg: #fff;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            touch-action: manipulation;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            text-align: center;
+            font-weight: 800;
+        }
+
+        /* 導航欄 / 模式切換 */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #e9ecef;
+            padding: 5px;
+            border-radius: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .nav-tabs button {
+            padding: 10px 20px;
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+        .nav-tabs button.active {
+            background: #fff;
+            color: var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: none; 
+        }
+        .container.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .progress {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 15px;
+            background: #e3f2fd;
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        /* --- 字詞卡模式樣式 --- */
+        .flashcard-scene {
+            width: 100%;
+            height: 280px; 
+            perspective: 1000px;
+            margin-bottom: 20px;
+        }
+        .flashcard {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .flashcard.is-flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 2px solid #e9ecef;
+        }
+        .card-front { background-color: #fff; }
+        #fc-question {
+            font-size: 26px; 
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .card-front .hint {
+            font-size: 28px;
+            margin-top: 15px;
+            color: #7f8c8d;
+        }
+        .card-back {
+            background-color: var(--primary);
+            color: white;
+            transform: rotateY(180deg);
+            font-size: 42px; 
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        /* 多項選擇題按鈕區域 */
+        .mc-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+            max-width: 450px;
+            margin-bottom: 15px;
+        }
+        .mc-btn {
+            padding: 16px;
+            font-size: 20px;
+            border: 2px solid var(--primary);
+            background: #fff;
+            color: var(--text);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: bold;
+            text-align: center;
+        }
+        .mc-btn:hover:not(:disabled) {
+            background: #e3f2fd;
+            transform: translateY(-2px);
+        }
+        .mc-btn.correct {
+            background: #27ae60 !important;
+            color: white !important;
+            border-color: #27ae60 !important;
+        }
+        .mc-btn.wrong {
+            background: #e74c3c !important;
+            color: white !important;
+            border-color: #e74c3c !important;
+        }
+        .mc-btn:disabled { cursor: default; opacity: 0.9; }
+
+        .feedback {
+            margin-top: 5px;
+            margin-bottom: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            min-height: 30px;
+        }
+
+        /* --- 手寫默書模式樣式 --- */
+        .audio-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+        .play-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            font-size: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(74, 144, 226, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.2s;
+        }
+        .play-btn:active { transform: scale(0.9); }
+        .english-hint {
+            font-size: 20px;
+            color: #555;
+            font-style: italic;
+            font-weight: bold;
+        }
+        
+        /* 新增：讀寫障礙友善提示區 */
+        .hint-badge {
+            display: inline-block;
+            background: #e0f7fa;
+            color: #00796b;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .peek-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn-sm { padding: 8px 15px; font-size: 15px; border-radius: 20px; }
+
+        /* 動態多格容器 */
+        .grids-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+        .canvas-container {
+            position: relative;
+            width: 110px; 
+            height: 110px;
+            background-color: #fdfbf7;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        @media (max-width: 500px) {
+            .canvas-container { width: 85px; height: 85px; } 
+        }
+        .canvas-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background-image: 
+                linear-gradient(to right, transparent 49%, #ffcccc 50%, transparent 51%),
+                linear-gradient(to bottom, transparent 49%, #ffcccc 50%, transparent 51%),
+                linear-gradient(45deg, transparent 49%, #ffe6e6 50%, transparent 51%),
+                linear-gradient(-45deg, transparent 49%, #ffe6e6 50%, transparent 51%);
+            border: 2px solid #ff9999;
+            box-sizing: border-box;
+        }
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            touch-action: none; 
+        }
+        .answer-reveal {
+            font-size: 36px;
+            font-weight: bold;
+            color: #27ae60;
+            min-height: 50px;
+            margin-bottom: 15px;
+            letter-spacing: 8px;
+            text-align: center;
+            transition: color 0.3s;
+        }
+
+        /* --- 按鈕群組 --- */
+        .controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+            max-width: 180px;
+            min-width: 120px;
+            transition: opacity 0.2s;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: #e9ecef; color: #333; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-warning { background: var(--secondary); color: white; }
+
+        /* --- 結算畫面 --- */
+        .summary-box { text-align: center; width: 100%; }
+        .score-circle {
+            width: 120px; height: 120px;
+            border-radius: 50%;
+            background: #f1f8e9;
+            border: 8px solid #8bc34a;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 36px; font-weight: bold;
+            color: #33691e;
+            margin: 0 auto 20px auto;
+        }
+        .student-name-input {
+            width: 80%; padding: 10px; font-size: 18px; margin-bottom: 20px;
+            text-align: center; border: 2px solid var(--primary); border-radius: 8px;
+        }
+        .report-textarea {
+            width: 100%; height: 150px; padding: 10px; font-size: 16px;
+            border-radius: 8px; border: 1px solid #ccc; margin-bottom: 20px;
+            background: #f9f9f9; resize: none;
+        }
+
+        /* --- 手寫紀錄表格樣式 --- */
+        .history-table {
+            width: 100%; border-collapse: collapse; margin-bottom: 20px; background: #fff;
+        }
+        .history-table th, .history-table td {
+            border: 1px solid #ddd; padding: 10px; text-align: center; vertical-align: middle;
+        }
+        .history-table th { background-color: #f1f8e9; color: #33691e; }
+        .history-img { max-height: 50px; border-radius: 4px; border: 1px solid #eee; }
+
+        /* 自訂訊息框 (替代 alert) */
+        #msg-box {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background-color: #333; color: white; padding: 15px 25px;
+            border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 10000; display: none; font-weight: bold; text-align: center;
+            animation: fadeInDown 0.3s ease-out;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+    </style>
+    <!-- 引入 html2canvas 用於截圖下載 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+    <!-- 自訂訊息框 -->
+    <div id="msg-box"></div>
+
+    <h1>💡 互動溫習與手寫默書</h1>
+
+    <div class="nav-tabs" id="nav-tabs">
+        <button id="tab-flashcard" class="active" onclick="switchMode('flashcard')">📑 概念選擇題</button>
+        <button id="tab-dictation" onclick="switchMode('dictation')">✍️ 粵語聽寫板</button>
+    </div>
+
+    <!-- 模式一：字詞卡 (多項選擇題版) -->
+    <div id="flashcard-container" class="container active">
+        <div class="progress" id="fc-progress">第 1 / 10 題</div>
+        
+        <div class="flashcard-scene" id="fc-scene">
+            <div class="flashcard" id="flashcard">
+                <div class="card-face card-front">
+                    <div id="fc-question">題目載入中...</div>
+                    <div id="fc-hint" class="hint"></div>
+                </div>
+                <div class="card-face card-back" id="fc-answer">答案</div>
+            </div>
+        </div>
+
+        <!-- 選擇題按鈕區 -->
+        <div class="mc-options" id="fc-options">
+            <!-- 動態生成按鈕 -->
+        </div>
+        
+        <div id="fc-feedback" class="feedback"></div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="btn-fc-next" style="display:none; width:100%; max-width: 450px;" onclick="nextCard()">下一題 ➡️</button>
+        </div>
+    </div>
+
+    <!-- 模式二：手寫默書 (增加多感官提示版) -->
+    <div id="dictation-container" class="container">
+        <div class="progress" id="dic-progress">第 1 / 16 題</div>
+        
+        <div class="audio-controls">
+            <button class="play-btn" onclick="playAudio()">🔊</button>
+            <div class="english-hint" id="dic-hint">Landmarks (n.)</div>
+            
+            <!-- 專為讀寫障礙新增的提示區 -->
+            <div id="dic-jp" class="hint-badge"></div>
+            
+            <div class="peek-controls" id="dic-peek-controls">
+                <button class="btn btn-secondary btn-sm" onclick="showFirstChar()">🔠 首字提示</button>
+                <button class="btn btn-secondary btn-sm" onclick="peekWord()">👀 閃卡記憶 (看2秒)</button>
+            </div>
+        </div>
+
+        <!-- 動態生成的格子區 -->
+        <div class="grids-wrapper" id="grids-wrapper"></div>
+
+        <div class="answer-reveal" id="dic-answer"></div>
+
+        <div class="controls" id="dic-controls-draw">
+            <button class="btn btn-secondary" onclick="clearAllCanvases()">🗑️ 擦膠 (重寫)</button>
+            <button class="btn btn-warning" onclick="showAnswer()">👁️ 我寫好了，對答案！</button>
+        </div>
+        
+        <!-- 學生自我評估按鈕 -->
+        <div class="controls" id="dic-controls-eval" style="display: none;">
+            <button class="btn btn-danger" onclick="markDictation(false)">❌ 寫錯了</button>
+            <button class="btn btn-success" onclick="markDictation(true)">✅ 全對！</button>
+        </div>
+    </div>
+
+    <!-- 結算成績單容器 -->
+    <div id="summary-container" class="container">
+        <div class="summary-box" id="summary-box">
+            <h2 id="summary-title" style="color:var(--primary); margin-bottom:15px;">🎉 完成測驗！</h2>
+            <div class="score-circle" id="summary-score">0%</div>
+            <p style="margin-bottom: 15px; font-size: 18px;" id="summary-text"></p>
+            
+            <input type="text" id="student-name" class="student-name-input" placeholder="👉 請輸入你的姓名 / 學號">
+            
+            <textarea id="report-text" class="report-textarea" readonly></textarea>
+            
+            <!-- 老師核對專用的手寫紀錄區 -->
+            <div id="visual-report-container" style="display:none; margin-top: 20px; text-align: left;">
+                <h3 style="margin-bottom: 10px; color: #d35400;">🕵️ 手寫證據 (老師核對區)</h3>
+                <table class="history-table" id="history-table">
+                    <thead>
+                        <tr>
+                            <th>答案</th>
+                            <th>你的手寫</th>
+                            <th>自評</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="btn-copy-report" onclick="copyReport()">📋 複製成績單給老師</button>
+                <button class="btn btn-warning" id="btn-download-img" style="display:none;" onclick="downloadImageReport()">🖼️ 下載成績單圖片交功課</button>
+                <button class="btn btn-secondary" onclick="resetCurrentMode()">🔄 再挑戰一次</button>
+                <button class="btn" id="btn-switch-mode" style="background: #9b59b6; color: white;" onclick="switchOppositeMode()">➡️ 嘗試另一模式</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- 顯示自訂訊息框 ---
+    function showMessage(msg) {
+        const msgBox = document.getElementById('msg-box');
+        msgBox.innerText = msg;
+        msgBox.style.display = 'block';
+        setTimeout(() => {
+            msgBox.style.display = 'none';
+        }, 3000);
+    }
+
+    // --- 資料庫 ---
+    const flashcardData = [
+        { q: "文章結構：先說大結論，再列出細節。", hint: "🔼 正三角形", a: "總分" },
+        { q: "文章結構：先列出細節，最後歸納出結論。", hint: "🔽 倒三角形", a: "分總" },
+        { q: "文章結構：開頭點題 ➔ 中間展開 ➔ 結尾呼應", hint: "🍔", a: "總分總" },
+        { q: "說明手法：通過界定來說明", hint: "例：愛情是指...", a: "定義說明" },
+        { q: "說明手法：通過例子來說明", hint: "例：變色龍...", a: "舉例說明" },
+        { q: "說明手法：引用他人的話或著作來說明", hint: "例：正如愛因斯坦所說...", a: "引用說明" },
+        { q: "說明手法：使用數字或統計數據來說明", hint: "例：4300萬人...", a: "數字說明" },
+        { q: "說明手法：使用打比喻的方法把事物具體形象地來說明", hint: "例：生活就像...", a: "比喻說明" },
+        { q: "說明手法：按特性、功用系統化分組來說明", hint: "例：雲層分三類...", a: "分類說明" },
+        { q: "說明手法：對比差異或相似之處來說明", hint: "例：柴油引擎 vs 汽油引擎", a: "比較說明" }
+    ];
+
+    // 新增 jyutping (粵拼) 提示，幫助讀寫障礙學生建立語音與字形的連結
+    const dictationData = [
+        { word: "名勝古跡", hint: "Landmarks (n.)", jp: "ming4 sing3 gu2 zik1" },
+        { word: "雄奇", hint: "Grand (adj.)", jp: "hung4 kei4" },
+        { word: "著名", hint: "Famous (adj.)", jp: "zyu3 ming4" },
+        { word: "神態各異", hint: "Diverse (adj.)", jp: "san4 taai3 gok3 ji6" },
+        { word: "舉世罕見", hint: "Rare (adj.)", jp: "geoi2 sai3 hon2 gin3" },
+        { word: "久經沙場", hint: "Veteran (adj.)", jp: "gau2 ging1 saa1 coeng4" },
+        { word: "轟動", hint: "Sensational (adj.)", jp: "gwang1 dung6" },
+        { word: "巍然", hint: "Towering (adj.)", jp: "ngai4 jin4" },
+        { word: "夙願", hint: "Wish (n.)", jp: "suk1 jyun6" },
+        { word: "堅毅", hint: "Resolute (adj.)", jp: "gin1 ngai6" },
+        { word: "建築", hint: "Building (n.)", jp: "gin3 zuk1" },
+        { word: "意氣昂揚", hint: "Spirited (adj.)", jp: "ji3 hei3 ngong4 joeng4" },
+        { word: "踉蹌", hint: "Stumbling (adj.)", jp: "loeng6 coeng3" },
+        { word: "風馳電掣", hint: "Fast (adj.)", jp: "fung1 ci4 din6 zai3" },
+        { word: "威嚴", hint: "Majestic (adj.)", jp: "wai1 jim4" },
+        { word: "粗獷", hint: "Rugged (adj.)", jp: "cou1 kwong3" }
+    ];
+
+    // --- 全局狀態 ---
+    let currentMode = 'flashcard'; 
+    let fcIndex = 0;
+    let dicIndex = 0;
+    
+    // 成績紀錄
+    let fcScore = 0;
+    let fcMistakes = [];
+    let dicScore = 0;
+    let dicMistakes = [];
+    let dicRecords = []; 
+    let currentHandwritingData = null;
+
+    // --- 模式切換 ---
+    function switchMode(mode) {
+        currentMode = mode;
+        document.getElementById('tab-flashcard').classList.remove('active');
+        document.getElementById('tab-dictation').classList.remove('active');
+        document.getElementById('flashcard-container').classList.remove('active');
+        document.getElementById('dictation-container').classList.remove('active');
+        document.getElementById('summary-container').classList.remove('active');
+        document.getElementById('nav-tabs').style.display = 'flex';
+
+        if (mode === 'flashcard') {
+            document.getElementById('tab-flashcard').classList.add('active');
+            document.getElementById('flashcard-container').classList.add('active');
+            fcIndex = 0; fcScore = 0; fcMistakes = [];
+            updateFlashcard();
+        } else if (mode === 'dictation') {
+            document.getElementById('tab-dictation').classList.add('active');
+            document.getElementById('dictation-container').classList.add('active');
+            dicIndex = 0; dicScore = 0; dicMistakes = []; dicRecords = []; 
+            updateDictation();
+        }
+    }
+
+    function switchOppositeMode() {
+        if(currentMode === 'flashcard') switchMode('dictation');
+        else switchMode('flashcard');
+    }
+
+    function resetCurrentMode() {
+        switchMode(currentMode);
+    }
+
+    // ==========================================
+    // 模式一：字詞卡邏輯 (三選一選擇題)
+    // ==========================================
+    const cardEl = document.getElementById('flashcard');
+    const fcQ = document.getElementById('fc-question');
+    const fcHint = document.getElementById('fc-hint');
+    const fcA = document.getElementById('fc-answer');
+    const fcProg = document.getElementById('fc-progress');
+    const fcFeedback = document.getElementById('fc-feedback');
+    const btnFcNext = document.getElementById('btn-fc-next');
+    const fcOptionsContainer = document.getElementById('fc-options');
+
+    function updateFlashcard() {
+        if (fcIndex >= flashcardData.length) {
+            showSummary('flashcard');
+            return;
+        }
+        
+        cardEl.classList.remove('is-flipped');
+        fcFeedback.innerHTML = "";
+        btnFcNext.style.display = "none";
+        fcOptionsContainer.innerHTML = ""; // 清空選項
+        
+        setTimeout(() => {
+            const current = flashcardData[fcIndex];
+            fcQ.innerText = current.q;
+            fcHint.innerText = current.hint || "";
+            fcA.innerText = current.a;
+            fcProg.innerText = `第 ${fcIndex + 1} / ${flashcardData.length} 題`;
+            
+            // 產生 3 個選項 (1 個對，2 個錯)
+            let options = [current.a];
+            // 從其他答案中抽出干擾項
+            let distractors = flashcardData.map(d => d.a).filter(a => a !== current.a);
+            distractors = distractors.sort(() => 0.5 - Math.random()); // 隨機打亂
+            options.push(distractors[0]);
+            options.push(distractors[1]);
+            
+            // 打亂這 3 個選項的順序
+            options = options.sort(() => 0.5 - Math.random());
+
+            options.forEach(optText => {
+                const btn = document.createElement('button');
+                btn.className = 'mc-btn';
+                btn.innerText = optText;
+                btn.onclick = () => checkFlashcardMC(btn, optText, current.a);
+                fcOptionsContainer.appendChild(btn);
+            });
+            
+        }, 150); 
+    }
+
+    function checkFlashcardMC(clickedBtn, selectedAns, correctAns) {
+        // 鎖定所有按鈕
+        const allBtns = document.querySelectorAll('.mc-btn');
+        allBtns.forEach(b => {
+            b.disabled = true;
+            // 把正確答案標示出來
+            if (b.innerText === correctAns) {
+                b.classList.add('correct');
+            }
+        });
+
+        if (selectedAns === correctAns) {
+            fcScore++;
+            fcFeedback.innerHTML = '<span style="color: #27ae60;">✅ 答對了！</span>';
+        } else {
+            clickedBtn.classList.add('wrong');
+            fcMistakes.push(`${flashcardData[fcIndex].q} (正解：${correctAns})`);
+            fcFeedback.innerHTML = `<span style="color: #e74c3c;">❌ 答錯了，請看背面正確答案！</span>`;
+        }
+        
+        btnFcNext.style.display = "block";
+        cardEl.classList.add('is-flipped');
+    }
+
+    function nextCard() {
+        fcIndex++;
+        updateFlashcard();
+    }
+
+    // ==========================================
+    // 模式二：手寫與語音邏輯 (增加多感官提示)
+    // ==========================================
+    const gridsWrapper = document.getElementById('grids-wrapper');
+    const dicHint = document.getElementById('dic-hint');
+    const dicJp = document.getElementById('dic-jp');
+    const dicAns = document.getElementById('dic-answer');
+    const dicProg = document.getElementById('dic-progress');
+    const synth = window.speechSynthesis;
+    
+    let activeCanvases = [];
+    let activeContexts = [];
+    let isDrawingEnabled = true;
+
+    function updateDictation() {
+        if (dicIndex >= dictationData.length) {
+            showSummary('dictation');
+            return;
+        }
+
+        const current = dictationData[dicIndex];
+        dicHint.innerText = current.hint;
+        dicJp.innerText = "粵音：" + (current.jp || "無");
+        dicProg.innerText = `第 ${dicIndex + 1} / ${dictationData.length} 題`;
+        dicAns.innerText = "";
+        dicAns.style.color = "#27ae60"; // 重置顏色
+        
+        document.getElementById('dic-controls-draw').style.display = 'flex';
+        document.getElementById('dic-controls-eval').style.display = 'none';
+        document.getElementById('dic-peek-controls').style.display = 'flex';
+        isDrawingEnabled = true;
+        
+        generateGrids(current.word.length);
+        playAudio();
+    }
+
+    // --- 讀寫障礙友善功能：閃卡記憶 (偷看一眼) ---
+    function peekWord() {
+        if (!isDrawingEnabled) return;
+        const current = dictationData[dicIndex];
+        dicAns.innerText = current.word;
+        dicAns.style.color = "#9b59b6"; // 用紫色區分這是提示
+        
+        // 2秒後自動隱藏
+        setTimeout(() => {
+            if (isDrawingEnabled) { // 確保還沒按「對答案」
+                dicAns.innerText = "";
+                dicAns.style.color = "#27ae60";
+            }
+        }, 2000);
+    }
+
+    // --- 讀寫障礙友善功能：首字提示 ---
+    function showFirstChar() {
+        if (!isDrawingEnabled) return;
+        const current = dictationData[dicIndex];
+        let hintStr = current.word.charAt(0);
+        // 後面的字補上圈圈
+        for(let i = 1; i < current.word.length; i++) {
+            hintStr += " 〇";
+        }
+        dicAns.innerText = hintStr;
+        dicAns.style.color = "#7f8c8d"; // 灰色表示提示
+    }
+
+    function generateGrids(charCount) {
+        gridsWrapper.innerHTML = ''; 
+        activeCanvases = [];
+        activeContexts = [];
+
+        for(let i = 0; i < charCount; i++) {
+            const container = document.createElement('div');
+            container.className = 'canvas-container';
+            
+            const bg = document.createElement('div');
+            bg.className = 'canvas-bg';
+            
+            const cvs = document.createElement('canvas');
+            cvs.width = 110; 
+            cvs.height = 110;
+            
+            container.appendChild(bg);
+            container.appendChild(cvs);
+            gridsWrapper.appendChild(container);
+
+            const ctx = cvs.getContext('2d');
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            activeCanvases.push(cvs);
+            activeContexts.push(ctx);
+            
+            bindCanvasEvents(cvs, ctx);
+        }
+    }
+
+    function playAudio() {
+        if (synth.speaking) synth.cancel();
+        const currentWord = dictationData[dicIndex].word;
+        const utterThis = new SpeechSynthesisUtterance(currentWord);
+        utterThis.lang = 'zh-HK'; 
+        utterThis.rate = 0.85; 
+        synth.speak(utterThis);
+    }
+
+    // --- 多畫布繪圖邏輯 ---
+    let currentDrawingCanvas = null;
+    let currentCtx = null;
+    let isDrawing = false;
+    let lastX = 0; let lastY = 0;
+
+    function getPos(e, canvas) {
+        const rect = canvas.getBoundingClientRect();
+        let clientX = e.clientX; let clientY = e.clientY;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[0].clientX; clientY = e.touches[0].clientY;
+        }
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    function startDrawing(e) {
+        if (!isDrawingEnabled) return;
+        e.preventDefault();
+        isDrawing = true;
+        currentDrawingCanvas = e.target;
+        currentCtx = currentDrawingCanvas.getContext('2d');
+        const pos = getPos(e, currentDrawingCanvas);
+        lastX = pos.x; lastY = pos.y;
+    }
+
+    function draw(e) {
+        if (!isDrawing || e.target !== currentDrawingCanvas || !isDrawingEnabled) return;
+        e.preventDefault();
+        const pos = getPos(e, currentDrawingCanvas);
+        currentCtx.beginPath();
+        currentCtx.moveTo(lastX, lastY);
+        currentCtx.lineTo(pos.x, pos.y);
+        currentCtx.stroke();
+        lastX = pos.x; lastY = pos.y;
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+        currentDrawingCanvas = null;
+    }
+
+    function bindCanvasEvents(canvas, ctx) {
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing, {passive: false});
+        canvas.addEventListener('touchmove', draw, {passive: false});
+        canvas.addEventListener('touchend', stopDrawing);
+    }
+
+    function clearAllCanvases() {
+        if (!isDrawingEnabled) return;
+        activeCanvases.forEach(canvas => {
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+    }
+
+    function showAnswer() {
+        const current = dictationData[dicIndex];
+        dicAns.innerText = current.word;
+        dicAns.style.color = "#27ae60"; // 顯示標準正確顏色
+        isDrawingEnabled = false; 
+        
+        captureCurrentHandwriting();
+        
+        document.getElementById('dic-controls-draw').style.display = 'none';
+        document.getElementById('dic-peek-controls').style.display = 'none'; // 對答案後隱藏提示按鈕
+        document.getElementById('dic-controls-eval').style.display = 'flex';
+    }
+
+    function captureCurrentHandwriting() {
+        if (activeCanvases.length === 0) return;
+        const tempCanvas = document.createElement('canvas');
+        const boxSize = 110;
+        tempCanvas.width = activeCanvases.length * boxSize;
+        tempCanvas.height = boxSize;
+        const tCtx = tempCanvas.getContext('2d');
+        
+        tCtx.fillStyle = '#fdfbf7';
+        tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        
+        activeCanvases.forEach((cvs, i) => {
+            tCtx.strokeStyle = '#ffe6e6';
+            tCtx.lineWidth = 2;
+            tCtx.strokeRect(i * boxSize, 0, boxSize, boxSize);
+            tCtx.drawImage(cvs, i * boxSize, 0, boxSize, boxSize);
+            tCtx.strokeStyle = '#bdc3c7';
+            tCtx.lineWidth = 2;
+            tCtx.strokeRect(i * boxSize, 0, boxSize, boxSize);
+        });
+        currentHandwritingData = tempCanvas.toDataURL('image/png');
+    }
+
+    function markDictation(isCorrect) {
+        dicRecords.push({
+            word: dictationData[dicIndex].word,
+            image: currentHandwritingData,
+            isCorrect: isCorrect
+        });
+
+        if (isCorrect) {
+            dicScore++;
+        } else {
+            dicMistakes.push(dictationData[dicIndex].word);
+        }
+        dicIndex++;
+        updateDictation();
+    }
+
+    // ==========================================
+    // 成績結算與匯出系統
+    // ==========================================
+    function showSummary(mode) {
+        document.getElementById('flashcard-container').classList.remove('active');
+        document.getElementById('dictation-container').classList.remove('active');
+        document.getElementById('nav-tabs').style.display = 'none'; 
+        document.getElementById('summary-container').classList.add('active');
+
+        let totalQ = 0;
+        let score = 0;
+        let modeName = "";
+        let mistakes = [];
+
+        if (mode === 'flashcard') {
+            totalQ = flashcardData.length;
+            score = fcScore;
+            modeName = "概念字詞卡 (選擇題)";
+            mistakes = fcMistakes;
+        } else {
+            totalQ = dictationData.length;
+            score = dicScore;
+            modeName = "粵語聽寫板 (手寫)";
+            mistakes = dicMistakes;
+        }
+
+        const percentage = Math.round((score / totalQ) * 100);
+        document.getElementById('summary-score').innerText = `${percentage}%`;
+        document.getElementById('summary-text').innerText = `你在「${modeName}」模式中，答對了 ${score} / ${totalQ} 題。`;
+
+        const visualReportContainer = document.getElementById('visual-report-container');
+        const btnCopyReport = document.getElementById('btn-copy-report');
+        const btnDownloadImg = document.getElementById('btn-download-img');
+        const btnSwitchMode = document.getElementById('btn-switch-mode');
+
+        if (mode === 'dictation') {
+            visualReportContainer.style.display = 'block';
+            btnDownloadImg.style.display = 'block';
+            btnCopyReport.style.display = 'none'; 
+            document.getElementById('report-text').style.display = 'none'; 
+            btnSwitchMode.innerText = "➡️ 去挑戰【概念選擇題】";
+
+            const tbody = document.getElementById('history-tbody');
+            tbody.innerHTML = '';
+            dicRecords.forEach(record => {
+                const tr = document.createElement('tr');
+                
+                const tdWord = document.createElement('td');
+                tdWord.innerText = record.word;
+                tdWord.style.fontWeight = 'bold';
+                
+                const tdImg = document.createElement('td');
+                if (record.image) {
+                    const img = document.createElement('img');
+                    img.src = record.image;
+                    img.className = 'history-img';
+                    tdImg.appendChild(img);
+                } else {
+                    tdImg.innerText = "未作答";
+                }
+                
+                const tdStatus = document.createElement('td');
+                tdStatus.innerHTML = record.isCorrect ? '✅<br><small style="color:gray;">(自稱對)</small>' : '❌<br><small style="color:gray;">(自稱錯)</small>';
+                
+                tr.appendChild(tdWord);
+                tr.appendChild(tdImg);
+                tr.appendChild(tdStatus);
+                tbody.appendChild(tr);
+            });
+
+        } else {
+            visualReportContainer.style.display = 'none';
+            btnDownloadImg.style.display = 'none';
+            btnCopyReport.style.display = 'block';
+            document.getElementById('report-text').style.display = 'block';
+            btnSwitchMode.innerText = "➡️ 去挑戰【手寫默書】";
+        }
+
+        const dateStr = new Date().toLocaleString('zh-HK');
+        let reportStr = `📝 語文互動溫習成績單\n`;
+        reportStr += `時間：${dateStr}\n`;
+        reportStr += `模式：${modeName}\n`;
+        reportStr += `成績：${score} / ${totalQ} (${percentage}%)\n`;
+        
+        if (mistakes.length > 0) {
+            reportStr += `\n⚠️ 需要溫習的錯題：\n`;
+            mistakes.forEach(m => reportStr += `- ${m}\n`);
+        } else {
+            reportStr += `\n🌟 太棒了！全部正確！\n`;
+        }
+        
+        document.getElementById('report-text').value = reportStr;
+        
+        // 監聽姓名輸入更新報告
+        document.getElementById('student-name').addEventListener('input', function() {
+            const name = this.value || "未命名學生";
+            let newReport = reportStr;
+            newReport = `👤 學生：${name}\n` + newReport;
+            document.getElementById('report-text').value = newReport;
+        });
+    }
+
+    function copyReport() {
+        const text = document.getElementById('report-text');
+        text.select();
+        document.execCommand('copy');
+        showMessage("📋 成績單已複製！");
+    }
+
+    function downloadImageReport() {
+        const summaryBox = document.getElementById('summary-box');
+        const nameInput = document.getElementById('student-name').value;
+        const title = document.getElementById('summary-title');
+        const originalTitle = title.innerText;
+        
+        if (nameInput) {
+            title.innerText = `📄 ${nameInput} 的手寫功課`;
+        }
+
+        document.getElementById('btn-download-img').style.display = 'none';
+        document.getElementById('btn-switch-mode').style.display = 'none';
+        const btns = summaryBox.querySelectorAll('.btn');
+        btns.forEach(b => b.style.display = 'none');
+
+        html2canvas(summaryBox, { scale: 2 }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = `手寫默書成績_${nameInput || '未命名'}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            title.innerText = originalTitle;
+            document.getElementById('btn-download-img').style.display = 'inline-block';
+            document.getElementById('btn-switch-mode').style.display = 'inline-block';
+            btns.forEach(b => b.style.display = 'inline-block');
+            showMessage("🖼️ 圖片下載成功！");
+        });
+    }
+</script>
+</body>
+</html>
